@@ -76,7 +76,6 @@ def download_task(url, file_id, format_type, quality):
             ydl_opts = {
                 'format': 'bestaudio/best',
                 'outtmpl': f'{DOWNLOAD_FOLDER}/{file_id}.%(ext)s',
-                'ffmpeg_location': FFMPEG_PATH,
                 'progress_hooks': [hook],
                 'postprocessor_hooks': [post_hook],  # ✅ FIX
                 'postprocessors': [{
