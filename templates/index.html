@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>⚡ YT Downloader Pro</title>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+
+/* 🌌 Animated Background */
+body {
+    background: radial-gradient(circle at 20% 20%, #0f172a, #020617 60%);
+    overflow-x: hidden;
+}
+
+/* Floating glow */
+body::before {
+    content: "";
+    position: fixed;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(0,140,255,0.4), transparent 70%);
+    top: -200px;
+    left: -200px;
+    filter: blur(100px);
+}
+
+/* Glass effect */
+.glass {
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(25px);
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* Neon glow */
+.glow {
+    box-shadow: 0 0 20px rgba(0,140,255,0.6),
+                0 0 40px rgba(0,140,255,0.3);
+}
+
+/* Button effect */
+.btn {
+    transition: all 0.2s ease;
+}
+.btn:hover {
+    transform: scale(1.07);
+    box-shadow: 0 0 20px rgba(0,140,255,0.6);
+}
+
+/* Progress animation */
+@keyframes pulseGlow {
+    0% { box-shadow: 0 0 5px cyan; }
+    50% { box-shadow: 0 0 20px cyan; }
+    100% { box-shadow: 0 0 5px cyan; }
+}
+
+.progress-glow {
+    animation: pulseGlow 1.5s infinite;
+}
+
+</style>
+</head>
+
+<body class="text-white flex items-center justify-center min-h-screen">
+
+<div class="glass p-10 rounded-3xl w-full max-w-3xl shadow-2xl glow">
+
+<h1 class="text-4xl font-bold text-center mb-6 tracking-wide">
+⚡ YT Downloader Pro
+</h1>
+
+<!-- INPUT -->
+<input id="url"
+class="w-full p-4 rounded-xl bg-black/40 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+placeholder="Paste YouTube URL...">
+
+<!-- PREVIEW BUTTON -->
+<button onclick="preview()"
+class="btn w-full mt-5 p-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 font-semibold">
+Preview
+</button>
+
+<!-- PREVIEW SECTION -->
+<div id="previewBox" class="hidden mt-8 text-center">
+
+<h2 id="title" class="text-xl font-semibold mb-4"></h2>
+
+<div class="flex justify-center">
+<img id="thumb"
+class="rounded-2xl shadow-xl w-80 transition hover:scale-105 hover:shadow-2xl">
+</div>
+
+<!-- QUALITY BUTTONS -->
+<div class="flex justify-center gap-3 mt-6">
+
+<button onclick="download('video','max')"
+class="btn bg-green-500 px-4 py-2 rounded-xl">MAX</button>
+
+<button onclick="download('video','1080')"
+class="btn bg-blue-500 px-4 py-2 rounded-xl">1080p</button>
+
+<button onclick="download('video','720')"
+class="btn bg-blue-400 px-4 py-2 rounded-xl">720p</button>
+
+<button onclick="download('mp3','0')"
+class="btn bg-yellow-500 px-4 py-2 rounded-xl">MP3</button>
+
+</div>
+
+<!-- PROGRESS -->
+<div class="mt-8">
+
+<div class="w-full h-5 bg-gray-700 rounded-full overflow-hidden">
+
+<div id="bar"
+class="h-full bg-gradient-to-r from-cyan-400 to-blue-500 progress-glow"
+style="width:0%"></div>
+
+</div>
+
+<p id="percent" class="mt-2 text-sm">0%</p>
+<p id="speed" class="text-xs text-gray-300"></p>
+
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+async function preview(){
+let url = document.getElementById("url").value;
+
+let res = await fetch("/info?url="+encodeURIComponent(url));
+let data = await res.json();
+
+if(data.error){ alert(data.error); return; }
+
+document.getElementById("previewBox").classList.remove("hidden");
+document.getElementById("title").innerText = data.title;
+document.getElementById("thumb").src = data.thumbnail;
+}
+
+async function download(type,quality){
+let url = document.getElementById("url").value;
+
+let res = await fetch("/download",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({url,type,quality})
+});
+
+let data = await res.json();
+track(data.id);
+}
+
+function track(id){
+
+let interval = setInterval(async()=>{
+
+let res = await fetch("/progress/"+id);
+let data = await res.json();
+
+let p = parseFloat(data.percent.replace("%","")) || 0;
+
+document.getElementById("bar").style.width = p+"%";
+document.getElementById("percent").innerText = data.percent;
+document.getElementById("speed").innerText = data.speed;
+
+if(p>=100){
+    clearInterval(interval);
+
+    // ✅ FIX: wait for full MP3 conversion
+    setTimeout(()=>{
+        window.location.href="/file/"+id;
+    },1500);
+}
+
+},700);
+
+}
+
+</script>
+
+</body>
+</html>
