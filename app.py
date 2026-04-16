@@ -13,7 +13,7 @@ if not os.path.exists(DOWNLOAD_FOLDER):
 
 progress_data = {}
 
-# ✅ YOUR FFMPEG PATH (correct)
+# ✅ No fixed path (Render compatible)
 FFMPEG_PATH = None
 
 
@@ -57,7 +57,6 @@ def download_task(url, file_id, format_type, quality):
             }
 
         elif d['status'] == 'finished':
-            # ⚠️ download finished but conversion not done yet
             progress_data[file_id] = {
                 "percent": "99%",
                 "speed": "Processing..."
@@ -65,7 +64,6 @@ def download_task(url, file_id, format_type, quality):
 
     def post_hook(d):
         if d['status'] == 'finished':
-            # ✅ final completion AFTER ffmpeg
             progress_data[file_id] = {
                 "percent": "100%",
                 "speed": "Completed"
@@ -74,10 +72,29 @@ def download_task(url, file_id, format_type, quality):
     try:
         if format_type == "mp3":
             ydl_opts = {
-                'format': 'bestaudio/best',
+                'format': 'bestaudio/best/best',
                 'outtmpl': f'{DOWNLOAD_FOLDER}/{file_id}.%(ext)s',
+
+                # 🔥 Anti-block headers
+                'http_headers': {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+                    'Accept-Language': 'en-US,en;q=0.9',
+                },
+
+                # 🔥 Retry system
+                'retries': 10,
+                'fragment_retries': 10,
+
+                # 🔥 Delay (avoid block)
+                'sleep_interval': 2,
+                'max_sleep_interval': 5,
+
+                # 🔥 Cookie support (optional)
+                'cookiefile': 'cookies.txt' if os.path.exists('cookies.txt') else None,
+
                 'progress_hooks': [hook],
-                'postprocessor_hooks': [post_hook],  # ✅ FIX
+                'postprocessor_hooks': [post_hook],
+
                 'postprocessors': [{
                     'key': 'FFmpegExtractAudio',
                     'preferredcodec': 'mp3',
@@ -93,7 +110,14 @@ def download_task(url, file_id, format_type, quality):
             ydl_opts = {
                 'format': fmt,
                 'outtmpl': f'{DOWNLOAD_FOLDER}/{file_id}.%(ext)s',
-                'ffmpeg_location': FFMPEG_PATH,
+
+                'http_headers': {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+                },
+
+                'retries': 10,
+                'fragment_retries': 10,
+
                 'progress_hooks': [hook],
             }
 
@@ -101,7 +125,15 @@ def download_task(url, file_id, format_type, quality):
             ydl.download([url])
 
     except Exception as e:
-        progress_data[file_id] = {"percent": "error", "speed": str(e)}
+        error_msg = str(e)
+
+        if "Sign in to confirm you're not a bot" in error_msg:
+            error_msg = "⚠️ YouTube blocked this request. Try again later or use cookies."
+
+        progress_data[file_id] = {
+            "percent": "error",
+            "speed": error_msg
+        }
 
 
 # ---------------- START DOWNLOAD ----------------
