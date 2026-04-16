@@ -135,7 +135,10 @@ let url = document.getElementById("url").value;
 let res = await fetch("/info?url="+encodeURIComponent(url));
 let data = await res.json();
 
-if(data.error){ alert(data.error); return; }
+if(data.error){ 
+    alert(data.error); 
+    return; 
+}
 
 document.getElementById("previewBox").classList.remove("hidden");
 document.getElementById("title").innerText = data.title;
@@ -162,6 +165,12 @@ let interval = setInterval(async()=>{
 let res = await fetch("/progress/"+id);
 let data = await res.json();
 
+if(data.percent === "error"){
+    clearInterval(interval);
+    alert(data.speed);
+    return;
+}
+
 let p = parseFloat(data.percent.replace("%","")) || 0;
 
 document.getElementById("bar").style.width = p+"%";
@@ -171,7 +180,7 @@ document.getElementById("speed").innerText = data.speed;
 if(p>=100){
     clearInterval(interval);
 
-    // ✅ FIX: wait for full MP3 conversion
+    // ✅ Wait for full conversion
     setTimeout(()=>{
         window.location.href="/file/"+id;
     },1500);
