@@ -14,7 +14,7 @@ if not os.path.exists(DOWNLOAD_FOLDER):
 progress_data = {}
 
 # ✅ YOUR FFMPEG PATH (correct)
-FFMPEG_PATH = "ffmpeg"
+FFMPEG_PATH = None
 
 
 # ---------------- HOME ----------------
